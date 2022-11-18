@@ -2,6 +2,9 @@ class UserInterface
   def initialize(io, game)
     @io = io
     @game = game
+    @state = true
+    @hits = []
+    @board = Array.new(10) { [Array.new(10, '.')] }
   end
 
   def run
@@ -9,8 +12,11 @@ class UserInterface
     show "Set up your ships first."
     show "You have these ships remaining: #{ships_unplaced_message}"
     prompt_for_ship_placement
-    show "This is your board now:"
-    show format_board
+    while @state
+      show "This is your board now:"
+      show format_board
+      fire
+    end
   end
 
   private
@@ -31,30 +37,40 @@ class UserInterface
   end
 
   def prompt_for_ship_placement
-    ship_length = prompt("Which do you wish to place?").to_i
+    ship_length = prompt "Which do you wish to place?"
     ship_orientation = prompt "Vertical or horizontal? [vh]"
-    ship_row = prompt("Which row?").to_i
-    ship_col = prompt("Which column?").to_i
+    ship_row = prompt "Which row?"
+    ship_col = prompt "Which column?"
+    fire 
     show "OK."
-    @game.place_ship(ship_length, ship_orientation, ship_row, ship_col)
+    @game.place_ship(
+      length: ship_length.to_i,
+      orientation: {"v" => :vertical, "h" => :horizontal}.fetch(ship_orientation),
+      row: ship_row.to_i,
+      col: ship_col.to_i
+    )
+  end
+  
+  def fire
+    @hit_row = prompt "Which row would you like to hit?"
+    @hit_col = prompt "Which col would you like to hit"
+    @hits << [@hit_row.to_i, @hit_col.to_i]
+    
   end
 
   def format_board
-    return (1..@game.rows).map do |y|
-      (1..@game.cols).map do |x|
-        next "S" if @game.ship_at?(x, y)
-        next "."
+    return (1..@game.rows).to_a.map! do |y|
+      (1..@game.cols).to_a.map! do |x|
+        if @game.ship_at?(x, y) and @hits.include?([x, y])
+           'X' 
+        elsif !@game.ship_at?(x, y) and @hits.include?([x, y])
+           'O' 
+        elsif @game.ship_at?(x, y)
+           "S" 
+        else
+           "." 
+        end
       end.join
     end.join("\n")
   end
 end
-
-
-
-
-# (
-#   length: ship_length.to_i,
-#   orientation: {"v" => :vertical, "h" => :horizontal}.fetch(ship_orientation),
-#   row: ship_row.to_i,
-#   col: ship_col.to_i
-# )
